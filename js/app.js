@@ -4,7 +4,7 @@
     define your module and controllers here
 */
 
-angular.module('CommentsApp', [])
+angular.module('CommentsApp', ['ui.bootstrap'])
     .config(function($httpProvider) {
         //Parse required two extra headers sent with every HTTP request: X-Parse-Application-Id, X-Parse-REST-API-Key
         //the first needs to be set to your application's ID value
@@ -44,11 +44,14 @@ angular.module('CommentsApp', [])
 
         $scope.refreshComments();
 
+        //To tell it how to sort
+        $scope.score = '-score';
+
         //initialize a new comment object on the scope for the new comment form
         $scope.newComment = {score: 0};
 
         $scope.addComment = function(comment) {
-            $scope.inserting = true;
+            $scope.submitting = true;
             $http.post(commentsUrl, comment)
                 .success(function(responseData) {
                     //Parse will return the new objectId in the response data
@@ -66,15 +69,23 @@ angular.module('CommentsApp', [])
                     //report to user in some way
                 })
                 .finally(function() {
-                    $scope.inserting = false;
+                    $scope.submitting = false;
                 });
         };
 
-        $scope.updateComment = function(comment) {
+        var upvoteComment = {
+            score: {__op: 'Increment', amount: 1}
+        };
+
+        var downvoteComment = {
+            score: {__op: 'Increment', amount: -1}
+        };
+
+        //This is the function that gets called on an upvote
+        $scope.upvoteComment = function(comment) {
             $scope.updating = true;
-            $http.put(commentsUrl + '/' + comment.objectId, comment)
+            $http.put(commentsUrl + '/' + comment.objectId, upvoteComment)
                 .success(function(responseData) {
-                    //nothing we really need to do since local object is already up-to-date
                 })
                 .error(function(err) {
                     console.log(err);
@@ -82,6 +93,46 @@ angular.module('CommentsApp', [])
                 })
                 .finally(function() {
                     $scope.updating = false;
+                });
+        };
+
+        //Function gets called on a downvote
+        $scope.downvoteComment = function(comment) {
+            //Only decremenent if the score is larger than 0
+            if(comment.score > 0) {
+                $scope.updating = true;
+                $http.put(commentsUrl + '/' + comment.objectId, downvoteComment)
+                    .success(function (responseData) {
+                    })
+                    .error(function (err) {
+                        console.log(err);
+                        //notify user in some way
+                    })
+                    .finally(function () {
+                        $scope.updating = false;
+                    });
+            }
+        };
+
+        //Delete comment
+        $scope.deleteComment = function(comment) {
+            $scope.deleting = true;
+            console.log(comment.objectId);
+            $http.delete(commentsUrl + '/' + comment.objectId)
+                .success(function(responseData) {
+
+                    //Delete it on the page
+                    var index = $scope.comments.indexOf(comment);
+                    $scope.comments.splice(index, 1);
+
+                })
+
+                .error(function(err) {
+
+                    console.log(err);
+
+                }).finally(function() {
+                    $scope.deleting = false;
                 });
         };
 

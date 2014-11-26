@@ -11,3 +11,8 @@ body {
     margin-right: 10px;
 }
 
+.form-control {
+    width: 25%;
+}
+
+
